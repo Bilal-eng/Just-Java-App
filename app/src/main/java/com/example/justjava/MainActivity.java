@@ -1,10 +1,18 @@
 package com.example.justjava;
 
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 import java.text.NumberFormat;
 
@@ -14,6 +22,9 @@ import java.text.NumberFormat;
 public class MainActivity extends AppCompatActivity {
 
     int quantity = 0;
+    int whippedCreamPrice = 1;
+    int chocolatePrice = 2;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,9 +36,43 @@ public class MainActivity extends AppCompatActivity {
      * This method is called when the order button is clicked.
      */
     public void submitOrder(View view) {
-        int price = quantity * 5;
-        String priceMessage = "Total: $" + price + "\nThank you!";
-        displayMessage(priceMessage);
+
+        EditText nameField = findViewById(R.id.name_field);
+        String name = nameField.getText().toString();
+
+        // Figure out if the user wants whipped cream topping
+        CheckBox whippedCream = findViewById(R.id.whipped_cream_checkbox);
+        boolean hasWhippedCream = whippedCream.isChecked();
+
+        // Figure out if the user wants chocolate topping
+        CheckBox chocolate = findViewById(R.id.chocolate_checkbox);
+        boolean hasChocolate = chocolate.isChecked();
+
+        int price = calculatePrice(hasWhippedCream, hasChocolate);
+        String priceMessage = createOrderSummary(price, hasWhippedCream, hasChocolate, name);
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:")); // only email apps should handle this
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Just Java order for " + name);
+        intent.putExtra(Intent.EXTRA_TEXT, priceMessage);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * Calculates the price of the order.
+     * @return total price
+     */
+    private int calculatePrice(boolean hasWhippedCream, boolean hasChocolate) {
+        int basePrice = 5;
+        if(hasWhippedCream) {
+            basePrice = basePrice + 1;
+        }
+        if(hasChocolate) {
+            basePrice = basePrice + 2;
+        }
+
+        return basePrice * quantity;
     }
 
     // Increment Function
@@ -36,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         quantity++;
-        display(quantity);
+        displayQuantity(quantity);
     }
 
     // Decrement Function
@@ -45,30 +90,24 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         quantity--;
-        display(quantity);
+        displayQuantity(quantity);
     }
 
     /**
      * This method displays the given quantity value on the screen.
      */
-    private void display(int number) {
-        TextView quantityTextView = (TextView) findViewById(R.id.quantity_text_view);
-        quantityTextView.setText("" + number);
+    private void displayQuantity(int numberOfCoffees) {
+        TextView quantityTextView = findViewById(R.id.quantity_text_view);
+        quantityTextView.setText("" + numberOfCoffees);
     }
 
-    /**
-     * This method displays the given price on the screen.
-     */
-    private void displayPrice(int number) {
-        TextView priceTextView = (TextView) findViewById(R.id.price_text_view);
-        priceTextView.setText(NumberFormat.getCurrencyInstance().format(number));
-    }
-
-    /**
-     * This method displays the given text on the screen.
-     */
-    private void displayMessage(String message) {
-        TextView priceTextView = (TextView) findViewById(R.id.price_text_view);
-        priceTextView.setText(message);
+    private String createOrderSummary(int price, boolean hasWhippedCream, boolean hasChocolate, String name) {
+        String priceMessage = "Name: " + name;
+        priceMessage += "\nAdd whipped cream? " + hasWhippedCream;
+        priceMessage += "\nAdd chocolate? " + hasChocolate;
+        priceMessage += "\nQuantity: " + quantity;
+        priceMessage += "\nTotal: " + NumberFormat.getCurrencyInstance().format(price);
+        priceMessage += "\n" + getString(R.string.thank_you);
+        return priceMessage;
     }
 }
